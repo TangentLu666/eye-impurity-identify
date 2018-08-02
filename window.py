@@ -1,4 +1,5 @@
 #coding:utf-8
+# 视图操作界面
 from PyQt5.QtWidgets import QApplication, QLabel, QSlider  
 from PyQt5 import QtWidgets  
 import PyQt5.QtCore 
@@ -51,7 +52,6 @@ class MainDialog(QDialog):
         self.output_label.setGeometry(900, 40, 640, 480)  
 
 
-
         #set open file button
         self.open_btn = QtWidgets.QPushButton(self)  
         self.open_btn.setObjectName("open_btn")  
@@ -61,25 +61,11 @@ class MainDialog(QDialog):
         self.open_btn.clicked.connect(self.open_file) 
 
         #set calculate button
-        self.calc_btn = QtWidgets.QPushButton(self)  
-        self.calc_btn.setObjectName("calc_btn")  
-        self.calc_btn.setGeometry(1, 60, 100, 40)
-        self.calc_btn.setText("calculate1")  
-        self.calc_btn.clicked.connect(self.calculate)  
-
-        #set calculate button
-        self.calc_btn2 = QtWidgets.QPushButton(self)  
-        self.calc_btn2.setObjectName("calc_btn2")  
+        self.calc_btn2 = QtWidgets.QPushButton(self)
+        self.calc_btn2.setObjectName("calc_btn")
         self.calc_btn2.setGeometry(1, 90, 100, 40)
-        self.calc_btn2.setText("calculate2")  
-        self.calc_btn2.clicked.connect(self.calculate2)  
-
-        #set calculate button
-        self.calc_btn3 = QtWidgets.QPushButton(self)  
-        self.calc_btn3.setObjectName("calc_btn3")  
-        self.calc_btn3.setGeometry(1, 120, 100, 40)
-        self.calc_btn3.setText("calculate3")  
-        self.calc_btn3.clicked.connect(self.calculate3)  
+        self.calc_btn2.setText("calculate")
+        self.calc_btn2.clicked.connect(self.calculate)
 
         #set save file button
         self.save_btn = QtWidgets.QPushButton(self)  
@@ -193,7 +179,7 @@ class MainDialog(QDialog):
             except :
                 print ('save file error')
 
-    def calculate(self):  
+    def calculate(self):
 
         self.img_proc.calculate()
         self.img_proc.mask_img = cv2.resize(self.img_proc.final_img,(self.width, self.height))
@@ -205,33 +191,6 @@ class MainDialog(QDialog):
         self.if_calculated = True
         self.reset()
         self.update_text()
-
-    def calculate2(self):  
-
-        self.img_proc.calculate2()
-        self.img_proc.mask_img = cv2.resize(self.img_proc.final_img,(self.width, self.height))
-        self.img_proc.mask_img = cv2.cvtColor(self.img_proc.mask_img, cv2.COLOR_BGR2RGB)                                           
-        
-        QImg = QImage(self.img_proc.mask_img.data, self.width, self.height, self.bytesPerLine,QImage.Format_RGB888)
-        pixmap = QPixmap.fromImage(QImg)
-        self.output_label.setPixmap(pixmap)
-        self.if_calculated = True
-        self.reset()
-        self.update_text()
-
-    def calculate3(self):  
-
-        self.img_proc.calculate3()
-        self.img_proc.mask_img = cv2.resize(self.img_proc.final_img,(self.width, self.height))
-        self.img_proc.mask_img = cv2.cvtColor(self.img_proc.mask_img, cv2.COLOR_BGR2RGB)                                           
-        
-        QImg = QImage(self.img_proc.mask_img.data, self.width, self.height, self.bytesPerLine,QImage.Format_RGB888)
-        pixmap = QPixmap.fromImage(QImg)
-        self.output_label.setPixmap(pixmap)
-        self.if_calculated = True
-        self.reset()
-        self.update_text()
-
 
 
     def move_point(self, x, y):

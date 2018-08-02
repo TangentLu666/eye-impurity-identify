@@ -1,4 +1,5 @@
 #coding=utf-8
+# 直接代码调用，核心算法看这里即可
 from calculate import *
 # from calculate3 import *
 from skimage import io
@@ -54,7 +55,7 @@ if __name__ == "__main__":
         img_proc.img=predeal(img_path,320)
 
         reset(img_proc)
-        imgs3=img_proc.calculate2()
+        imgs3=img_proc.calculate()
 
         name=OUTPUT_PATH+"done_"+read_name
         a=("%.2f%%" % (img_proc.dirt_area*100/img_proc.all_area))

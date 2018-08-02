@@ -1,4 +1,5 @@
 # coding=utf-8
+# 核心运算代码及部分界面逻辑
 import numpy as np
 import cv2
 import traceback
@@ -6,8 +7,6 @@ import random
 import skimage.filters.rank as sfr
 from skimage.morphology import disk
 
-
-# from until import *
 
 class ImgProcess():
     def __init__(self, parent=None):
@@ -29,11 +28,11 @@ class ImgProcess():
 
         self.orig_gray = None
 
-    def show(self,img):
-        cv2.namedWindow("res",0);
+    def show(self, img):
+        cv2.namedWindow("res", 0);
         cv2.resizeWindow("res", 1800, 960);
         cv2.moveWindow("res", 100, 50);
-        cv2.imshow("res",img)
+        cv2.imshow("res", img)
         cv2.waitKey(0)
 
     def distance(self, p1, p2):
@@ -44,10 +43,8 @@ class ImgProcess():
         if self.if_set_border:
             x = int(np.mean(self.border_cnt, axis=0)[0])
             y = int(np.mean(self.border_cnt, axis=0)[1])
-            # cv2.imshow('before', self.border_mask)
             self.border_mask = cv2.fillConvexPoly(self.border_mask, self.border_cnt, 128)
             color = self.border_mask[y][x]
-            # self.border_mask[y][x] = 255
             mask = cv2.resize(self.border_mask, (ori_img.shape[1], ori_img.shape[0]),
                               cv2.INTER_NEAREST)
             for i in range(mask.shape[0]):
@@ -59,8 +56,6 @@ class ImgProcess():
                                 img[i][j][c] = ori_img[i][j][c]
                             self.final_mask[i][j] = 0
 
-            # cv2.imshow('after', self.border_mask)
-            # cv2.waitKey(0)
         return img
 
     def auto_canny(self, image, sigma=0.7):
@@ -78,10 +73,8 @@ class ImgProcess():
                 if img[i][j][0] > light_thresh and img[i][j][1] > light_thresh and img[i][j][
                     2] > light_thresh:
                     thresh[i][j] = 255
-        # cv2.imshow('before', thresh)
         kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (20, 20))
         thresh = cv2.dilate(thresh, kernel, 5)
-        # cv2.imshow('after', thresh)
 
         for i in range(thresh.shape[0]):
             for j in range(thresh.shape[1]):
@@ -118,8 +111,8 @@ class ImgProcess():
 
         # 叠加局部细纹合并矩阵（局部细纹大于30%认定整个区域为杂质区域）
         bad = sfr.mean(border, disk(15))
-        border = np.where(bad > 255*0.30, True, border) # 原0.25
-        border = np.where(bad < 255*0.08, False, border) # 原0.08
+        border = np.where(bad > 255 * 0.30, True, border)  # 原0.25
+        border = np.where(bad < 255 * 0.08, False, border)  # 原0.08
 
         if fil_light:  # 叠加过滤光斑矩阵
             light = sfr.maximum(self.orig_gray, disk(15))
@@ -127,14 +120,14 @@ class ImgProcess():
             # light=np.where(light_mean>255*0.9,light,self.orig_gray)
             border = np.where(light < 230, border, False)
 
-        mask=np.where(border, mask_img, 0)
+        mask = np.where(border, mask_img, 0)
         img_s[0] = np.where(border, 255, img_s[0])
         img_s[1] = np.where(border, 0, img_s[1])
         img_s[2] = np.where(border, 0, img_s[2])
         img = cv2.merge(img_s)
         # 计算杂质面积
         self.dirt_area = np.sum(border == True)
-        return img,mask
+        return img, mask
 
     def add_border(self, x, y, size=1):
         self.border_mask[max(0, y - size): min(y + size, self.border_mask.shape[0] - size), \
@@ -170,96 +163,11 @@ class ImgProcess():
     def save_process(self):
         mask = cv2.resize(self.mask, (self.ori_img.shape[1], self.ori_img.shape[0]),
                           cv2.INTER_NEAREST)
-        self.final_img[:,:,0]=np.where(mask>0,mask,self.ori_img[:,:,0])
-        self.final_img[:,:,1]=np.where(mask>0,0,self.ori_img[:,:,1])
-        self.final_img[:,:,2]=np.where(mask>0,0,self.ori_img[:,:,2])
-        # for i in range(mask.shape[0]):
-        #     for j in range(mask.shape[1]):
-        #         if 255 == mask[i][j]:
-        #             self.final_img[i][j] = (255, 0, 0)
-        #         else:
-        #             for c in range(3):
-        #                 self.final_img[i][j][c] = self.ori_img[i][j][c]
+        self.final_img[:, :, 0] = np.where(mask > 0, mask, self.ori_img[:, :, 0])
+        self.final_img[:, :, 1] = np.where(mask > 0, 0, self.ori_img[:, :, 1])
+        self.final_img[:, :, 2] = np.where(mask > 0, 0, self.ori_img[:, :, 2])
 
-    def calculate(self):
-        self.dirt_area = 0
-        img = self.ori_img.copy()
-        self.final_img = img
-        self.final_mask = np.zeros((img.shape[0], img.shape[1]), np.uint8)
-        self.mask = np.zeros((img.shape[0], img.shape[1]), np.uint8)
-        self.border_cnt = np.array(self.border_cnt)
-
-        ori_img = img.copy()
-        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        try:
-            print('calculating...')
-            thresh = np.zeros(gray.shape, np.uint8)
-            if not self.if_set_border:
-                circles = cv2.HoughCircles(gray, cv2.HOUGH_GRADIENT, 1, 600,
-                                           param1=50, param2=30, minRadius=250, maxRadius=0)
-                circles = np.uint16(np.around(circles))
-                circle = circles[0][0]
-                gray_roi = gray[
-                           max(0, circle[1] - circle[2]): min(circle[1] + circle[2], gray.shape[0]),
-                           max(0, circle[0] - circle[2]): min(circle[0] + circle[2], gray.shape[1])]
-                thresh_roi = cv2.adaptiveThreshold(gray_roi, 255, cv2.ADAPTIVE_THRESH_MEAN_C, \
-                                                   cv2.THRESH_BINARY, 11, 8)
-                thresh[max(0, circle[1] - circle[2]): min(circle[1] + circle[2], gray.shape[0]),
-                max(0, circle[0] - circle[2]): min(circle[0] + circle[2],
-                                                   gray.shape[1])] = thresh_roi
-
-            else:
-                scale = 1.0 * self.border_mask.shape[0] / img.shape[0]
-                gray_roi = gray[int(np.min(self.border_cnt[:, 0] / scale)): \
-                                int(np.max(self.border_cnt[:, 0] / scale)), \
-                           int(np.min(self.border_cnt[:, 1] / scale)): \
-                           int(np.max(self.border_cnt[:, 1] / scale))]
-                thresh_roi = cv2.adaptiveThreshold(gray_roi, 255, cv2.ADAPTIVE_THRESH_MEAN_C, \
-                                                   cv2.THRESH_BINARY, 11, 8)
-                thresh[int(np.min(self.border_cnt[:, 0] / scale)): \
-                       int(np.max(self.border_cnt[:, 0] / scale)), \
-                int(np.min(self.border_cnt[:, 1] / scale)): \
-                int(np.max(self.border_cnt[:, 1] / scale))] = thresh_roi
-            _, contours, hierarchy = cv2.findContours(thresh, cv2.RETR_TREE,
-                                                      cv2.CHAIN_APPROX_SIMPLE)
-            for i, cnt in enumerate(contours):
-                area = cv2.contourArea(cnt)
-                if area < 200:
-                    img = cv2.fillConvexPoly(img, cnt, (255, 0, 0))
-                    self.final_mask = cv2.fillConvexPoly(self.final_mask, cnt, (255))
-
-            if not self.if_set_border:
-                for i in range(thresh.shape[0]):
-                    for j in range(thresh.shape[1]):
-                        if (255 == self.final_mask[i][j]) and (
-                                self.distance([i, j], [circle[1], circle[0]]) > circle[2]):
-                            for c in range(3):
-                                img[i][j][c] = ori_img[i][j][c]
-                            self.final_mask[i][j] = 0
-                self.all_area = int(int(circle[2]) * circle[2] * 3.14)
-
-            img = self.filter_border(ori_img, img)
-            self.final_img = self.filter_light(ori_img, img)
-
-            for i in range(self.final_mask.shape[0]):
-                for j in range(self.final_mask.shape[1]):
-                    if self.final_mask[i][j] == 255:
-                        self.dirt_area += 1
-            self.mask = cv2.resize(self.final_mask,
-                                   (self.border_mask.shape[1], self.border_mask.shape[0]),
-                                   cv2.INTER_NEAREST)
-
-            # cv2.imshow('ori_img', self.ori_img)
-            # cv2.waitKey(0)
-
-
-        except:
-            traceback.print_exc()
-
-        print('done')
-
-    # --------------2-----------2----------2-----------2----------2-----------2----------2-----------2----------2-----------2----------2
-    def calculate2(self, canny=0.1, mid=5):
+    def calculate(self, canny=0.1, mid=5):
         self.dirt_area = 0
         img = self.ori_img.copy()
         self.final_img = img
@@ -296,102 +204,17 @@ class ImgProcess():
                                 int(np.max(self.border_cnt[:, 1] / scale)), \
                            int(np.min(self.border_cnt[:, 0] / scale)): \
                            int(np.max(self.border_cnt[:, 0] / scale))]
-                thresh_roi = cv2.adaptiveThreshold(gray_roi, 255, cv2.ADAPTIVE_THRESH_MEAN_C, \
+                thresh_roi = cv2.adaptiveThreshold(gray_roi, 255, cv2.ADAPTIVE_THRESH_MEAN_C,
                                                    cv2.THRESH_BINARY_INV, 13, 2)
                 thresh[int(np.min(self.border_cnt[:, 1] / scale)): \
                        int(np.max(self.border_cnt[:, 1] / scale)), \
                 int(np.min(self.border_cnt[:, 0] / scale)): \
                 int(np.max(self.border_cnt[:, 0] / scale))] = thresh_roi
 
-            # --------------2-----------2----------2-----------2----------2-----------2----------2-----------2----------2-----------2----------2
-            self.final_img,self.final_mask = self.merge(img, thresh)
-            # self.final_img = self.filter_border(ori_img, img)
-            # img = self.filter_border(ori_img, img)
-            # self.final_img = self.filter_light(ori_img, img)
-
-            # for i in range(self.final_mask.shape[0]):
-            #     for j in range(self.final_mask.shape[1]):
-            #         if self.final_mask[i][j] == 255:
-            #             self.dirt_area+=1
-
-            self.mask = cv2.resize(self.final_mask,(self.border_mask.shape[1], self.border_mask.shape[0]), cv2.INTER_NEAREST)
-
-        except:
-            traceback.print_exc()
-
-        print('done')
-
-    # --------------3-----------3----------3-----------3----------3-----------3----------3-----------3----------3-----------3----------3
-    def calculate3(self):
-        self.dirt_area = 0
-        img = self.ori_img.copy()
-        self.final_img = img
-        self.final_mask = np.zeros((img.shape[0], img.shape[1]), np.uint8)
-        self.mask = np.zeros((img.shape[0], img.shape[1]), np.uint8)
-        self.border_cnt = np.array(self.border_cnt)
-
-        ori_img = img.copy()
-        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-
-        try:
-            print('calculate_bad2...')
-            thresh = np.zeros(gray.shape, np.uint8)
-            if not self.if_set_border:
-                circles = cv2.HoughCircles(gray, cv2.HOUGH_GRADIENT, 1, 600,
-                                           param1=100, param2=20, minRadius=250, maxRadius=0)
-                circles = np.uint16(np.around(circles))
-                circle = circles[0][0]
-                self.circle = circle
-
-                gray_roi = gray[
-                           max(0, circle[1] - circle[2]): min(circle[1] + circle[2], gray.shape[0]),
-                           max(0, circle[0] - circle[2]): min(circle[0] + circle[2], gray.shape[1])]
-                thresh_roi = cv2.adaptiveThreshold(gray_roi, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, \
-                                                   cv2.THRESH_BINARY, 233, 3)
-                thresh[max(0, circle[1] - circle[2]): min(circle[1] + circle[2], gray.shape[0]),
-                max(0, circle[0] - circle[2]): min(circle[0] + circle[2],
-                                                   gray.shape[1])] = thresh_roi
-
-            else:
-                scale = 1.0 * self.border_mask.shape[0] / img.shape[0]
-                gray_roi = gray[int(np.min(self.border_cnt[:, 1] / scale)): \
-                                int(np.max(self.border_cnt[:, 1] / scale)), \
-                           int(np.min(self.border_cnt[:, 0] / scale)): \
-                           int(np.max(self.border_cnt[:, 0] / scale))]
-                thresh_roi = cv2.adaptiveThreshold(gray_roi, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, \
-                                                   cv2.THRESH_BINARY, 233, 3)
-
-                thresh[int(np.min(self.border_cnt[:, 1] / scale)): \
-                       int(np.max(self.border_cnt[:, 1] / scale)), \
-                int(np.min(self.border_cnt[:, 0] / scale)): \
-                int(np.max(self.border_cnt[:, 0] / scale))] = thresh_roi
-
-
-                # scale = 1.0 * self.border_mask.shape[0] / img.shape[0]
-                # gray_roi = gray[int(np.min(self.border_cnt[:, 1] / scale)): \
-                #                 int(np.max(self.border_cnt[:, 1] / scale)), \
-                #            int(np.min(self.border_cnt[:, 0] / scale)): \
-                #            int(np.max(self.border_cnt[:, 0] / scale))]
-                #
-                #
-                # thresh[int(np.min(self.border_cnt[:, 1] / scale)): \
-                #        int(np.max(self.border_cnt[:, 1] / scale)), \
-                # int(np.min(self.border_cnt[:, 0] / scale)): \
-                # int(np.max(self.border_cnt[:, 0] / scale))] = thresh_roi
-
-
-            print('set_borde...')
-            self.final_img,self.final_mask = self.merge(ori_img, thresh, False)
-            # for i in range(self.final_mask.shape[0]):
-            #     for j in range(self.final_mask.shape[1]):
-            #         if self.final_mask[i][j] == 255:
-            #             self.dirt_area+=1
-            self.mask = cv2.resize(self.final_mask,(self.border_mask.shape[1], self.border_mask.shape[0]), cv2.INTER_NEAREST)
-            # print(self.dirt_area)
-            # print(np.sum())
-            # cv2.imshow('ori_img', self.ori_img)
-            # cv2.waitKey(0)
-
+            self.final_img, self.final_mask = self.merge(img, thresh)
+            self.mask = cv2.resize(self.final_mask,
+                                   (self.border_mask.shape[1], self.border_mask.shape[0]),
+                                   cv2.INTER_NEAREST)
         except:
             traceback.print_exc()
 

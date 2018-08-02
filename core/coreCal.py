@@ -25,7 +25,7 @@ def calculate(ori_img, canny=0.1, mid=5):
         gray_roi = gray[
                    max(0, circle[1] - circle[2]): min(circle[1] + circle[2], gray.shape[0]),
                    max(0, circle[0] - circle[2]): min(circle[0] + circle[2], gray.shape[1])]
-        # 对正方形区域进行自适应二值化运算，得到颜色变化较大的区域标识(不平整的眼球表面,即眼球杂质)
+        # 对正方形区域进行自适应二值化运算，得到颜色变化较大的区域标识(不平整的眼球表面,即眼球杂质) img_01.png
         thresh_roi = cv2.adaptiveThreshold(gray_roi, 255, cv2.ADAPTIVE_THRESH_MEAN_C, \
                                            cv2.THRESH_BINARY_INV, 13, 2)
         # 把眼球杂志结果赋值到原图大小的纯黑图上
@@ -43,10 +43,10 @@ def calculate(ori_img, canny=0.1, mid=5):
 def merge(img, mask_img):
     # 把原图分隔成三通道图
     img_s = cv2.split(img)
-    # 圆边界计算，得到一个坐标在眼球圆内的值为True，圆外为False的原图同大小数组
+    # # 圆边界计算，得到一个坐标在眼球圆内的值为True，圆外为False的原图同大小数组 img_04.png
     border = np.fromfunction(func2, mask_img.shape)
     # 叠加检测结果矩阵，得到一个坐标眼球圆内，且有杂质标记的值为True的数组，也就是标记哪些像素是应该标记出来的
-    border = np.where(mask_img > 0, border, False)
+    border = np.where(mask_img > 0, border, False) # 把border改成True即可达到 img_05.png
     # 计算每个通道的值(255,0,0)为蓝色，即杂质部分标记为蓝色，其他部分使用原图
     img_s[0] = np.where(border, 255, img_s[0])
     img_s[1] = np.where(border, 0, img_s[1])

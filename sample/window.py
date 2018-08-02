@@ -1,13 +1,11 @@
 #coding:utf-8
 # 视图操作界面
-from PyQt5.QtWidgets import QApplication, QLabel, QSlider  
-from PyQt5 import QtWidgets  
-import PyQt5.QtCore 
+from PyQt5 import QtWidgets
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap,  QImage
 from PyQt5.QtWidgets import *
 import os
-from calculate import *
+from sample.ImgProcess import *
 
 dialog = None
 

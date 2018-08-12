@@ -5,6 +5,7 @@ import imutils
 import cv2
 import os
 import glob
+import numpy as np
 from core.coreCal import calculate
 
 
@@ -38,5 +39,6 @@ if __name__ == "__main__":
 
         name=OUTPUT_PATH+"done_"+read_name
 
-        cv2.imwrite(name,res_img)
+        # cv2.imwrite(name,res_img)
+        cv2.imwrite(name,np.hstack([ori_img,res_img]))
 

@@ -39,7 +39,7 @@ def calculate(ori_img, canny=0.1, mid=5):
 
     print('done')
 
-# 图片合并，过滤灯光
+# 图片合并
 def merge(img, mask_img):
     # 把原图分隔成三通道图
     img_s = cv2.split(img)
